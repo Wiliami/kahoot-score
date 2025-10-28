@@ -264,7 +264,7 @@ tr:hover {
 .file-upload input[type="file"] {
     width: 100%;
     padding: 10px;
-    border: 2px dashed #46178f;
+    border: 2px solid #46178f;
     border-radius: 5px;
     background-color: white;
     cursor: pointer;
