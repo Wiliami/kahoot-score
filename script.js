@@ -16,7 +16,11 @@ function handleFileUpload(event) {
         try {
             let jsonData;
             
-            if (fileName.endsWith('.csv')) {
+            if (fileName.endsWith('.pdf')) {
+                // Processar PDF
+                processPDF(e.target.result);
+                return;
+            } else if (fileName.endsWith('.csv')) {
                 // Processar CSV
                 const text = e.target.result;
                 const lines = text.split('\n');
@@ -62,7 +66,7 @@ function handleFileUpload(event) {
             processKahootData(jsonData);
         } catch (error) {
             console.error('Erro ao processar arquivo:', error);
-            alert('Erro ao processar o arquivo. Certifique-se de que o arquivo é um CSV ou Excel válido do Kahoot.');
+            alert('Erro ao processar o arquivo. Certifique-se de que o arquivo é um CSV, Excel ou PDF válido do Kahoot.');
         }
     };
     
@@ -75,6 +79,93 @@ function handleFileUpload(event) {
     } else {
         reader.readAsArrayBuffer(file);
     }
+}
+
+async function processPDF(arrayBuffer) {
+    try {
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        
+        // Extrair texto de todas as páginas
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n';
+        }
+        
+        // Processar o texto extraído
+        parsePDFText(fullText);
+    } catch (error) {
+        console.error('Erro ao processar PDF:', error);
+        alert('Erro ao processar o PDF. Certifique-se de que é um relatório válido do Kahoot.');
+    }
+}
+
+function parsePDFText(text) {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const data = [];
+    
+    // Tentar identificar padrões do Kahoot
+    // Formato comum: Nome ... Pontuação ou Nome Pontuação
+    const nameScorePattern = /^(.+?)\s+(\d+)$/;
+    
+    let headers = [];
+    let foundData = false;
+    
+    for (let line of lines) {
+        line = line.trim();
+        
+        // Pular linhas de cabeçalho/título
+        if (line.toLowerCase().includes('kahoot') || 
+            line.toLowerCase().includes('final scores') ||
+            line.toLowerCase().includes('results') ||
+            line.toLowerCase().includes('rank')) {
+            continue;
+        }
+        
+        // Tentar extrair nome e pontuação
+        const match = line.match(nameScorePattern);
+        if (match) {
+            const name = match[1].replace(/^\d+\s*/, '').trim(); // Remove ranking number
+            const score = match[2];
+            
+            if (!foundData) {
+                headers = ['Nome', 'Pontuação'];
+                data.push(headers);
+                foundData = true;
+            }
+            
+            data.push([name, score]);
+        } else {
+            // Tentar extrair dados separados por espaços múltiplos ou tabs
+            const parts = line.split(/\s{2,}|\t/).filter(p => p.trim());
+            if (parts.length >= 2) {
+                const lastPart = parts[parts.length - 1];
+                if (/^\d+$/.test(lastPart)) {
+                    const name = parts.slice(0, -1).join(' ').replace(/^\d+\s*/, '').trim();
+                    const score = lastPart;
+                    
+                    if (!foundData) {
+                        headers = ['Nome', 'Pontuação'];
+                        data.push(headers);
+                        foundData = true;
+                    }
+                    
+                    if (name) {
+                        data.push([name, score]);
+                    }
+                }
+            }
+        }
+    }
+    
+    if (data.length < 2) {
+        alert('Não foi possível extrair dados do PDF. O formato pode não ser compatível. Tente usar CSV ou Excel.');
+        return;
+    }
+    
+    processKahootData(data);
 }
 
 function processKahootData(data) {
@@ -92,7 +183,7 @@ function processKahootData(data) {
     // Procurar coluna de nome
     for (let i = 0; i < headers.length; i++) {
         const header = headers[i];
-        if (header.includes('player') || header.includes('nome') || header.includes('player') || header.includes('participante') || header.includes('nickname')) {
+        if (header.includes('name') || header.includes('nome') || header.includes('player') || header.includes('participante') || header.includes('nickname')) {
             nameIndex = i;
             break;
         }
@@ -101,7 +192,7 @@ function processKahootData(data) {
     // Procurar coluna de pontuação
     for (let i = 0; i < headers.length; i++) {
         const header = headers[i];
-        if (header.includes('total score (points)') || header.includes('pontu') || header.includes('total') || header.includes('points')) {
+        if (header.includes('score') || header.includes('pontu') || header.includes('total') || header.includes('points')) {
             scoreIndex = i;
             break;
         }

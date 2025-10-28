@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculador de Ranking Kahoot</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
     <h1>Calculador de Ranking Kahoot</h1>
@@ -32,7 +33,7 @@
                     <div class="player-entry">
                         <input type="text" class="name-input" placeholder="Nome do Participante">
                         <input type="number" class="score-input" placeholder="Pontuação" min="0">
-                        <button class="remove-player" onclick="removePlayer(this)" title="Remover participante">✕</button>
+                        <button class="remove-player" onclick="removePlayer(this)">✕</button>
                     </div>
                 </div>
                 <button class="add-player" onclick="addPlayer(1)">+ Adicionar Participante</button>
@@ -69,6 +70,6 @@
         </div>
     </div>
 
-    <script src="./script.js"></script>
+   <script src="./script.js"></script>
 </body>
 </html>
