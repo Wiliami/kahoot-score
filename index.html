@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculador de Ranking Kahoot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Calculador de Ranking Kahoot</h1>
+    
+    <div class="container">
+        <div class="import-section">
+            <h3>Importar Dados do Kahoot</h3>
+            <div class="file-upload">
+                <input type="file" id="csv-file" accept=".csv,.xlsx,.xls,.pdf">
+            </div>
+            <div class="csv-instructions">
+                <strong>Instruções:</strong> Faça o download do relatório do Kahoot em formato <strong>CSV (.csv)</strong>, Excel (.xlsx) ou <strong>PDF (.pdf)</strong>. 
+                O sistema irá extrair automaticamente os nomes e pontuações dos participantes.
+            </div>
+        </div>
+        
+        <div id="quizzes">
+            <div class="quiz-container" id="quiz-1">
+                <div class="quiz-header">
+                    <h3>Quiz 1</h3>
+                    <button class="remove-quiz" onclick="removeQuiz(1)" disabled>Remover Quiz</button>
+                </div>
+                <div id="players-quiz-1">
+                    <div class="player-entry">
+                        <input type="text" class="name-input" placeholder="Nome do Participante">
+                        <input type="number" class="score-input" placeholder="Pontuação" min="0">
+                        <button class="remove-player" onclick="removePlayer(this)" title="Remover participante">✕</button>
+                    </div>
+                </div>
+                <button class="add-player" onclick="addPlayer(1)">+ Adicionar Participante</button>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="addQuiz()">+ Adicionar Novo Quiz</button>
+            <button onclick="calculateRanking()">Calcular Ranking</button>
+        </div>
+        
+        <div id="ranking-results" class="hidden">
+            <h2>Ranking Final</h2>
+            <table id="ranking-table">
+                <thead>
+                    <tr>
+                        <th class="position">Posição</th>
+                        <th>Participante</th>
+                        <th>Pontuação Total</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-body">
+                    <!-- Ranking será inserido aqui -->
+                </tbody>
+            </table>
+            
+            <div class="file-input">
+                <button onclick="exportToCSV()">Exportar para CSV</button>
+            </div>
+        </div>
+        
+        <div class="reset-section">
+            <button onclick="resetAll()">Recomeçar Tudo</button>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>
