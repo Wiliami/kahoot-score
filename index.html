@@ -7,9 +7,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="./styles.css">
+    <script>
+        // Configurar PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        
+    </style>
 </head>
 <body>
-    <h1>Calculador de Ranking Kahoot</h1>    
+    <h1>Calculador de Ranking Kahoot</h1>
+    
     <div class="container">
         <div class="import-section">
             <h3>Importar Dados do Kahoot</h3>
@@ -22,17 +30,32 @@
             </div>
         </div>
         
+        <div class="import-section">
+            <h3>Dados Salvos</h3>
+            <div class="saved-data-info">
+                <p id="saved-data-message">Nenhum dado salvo ainda.</p>
+                <button onclick="loadSavedData()" id="load-saved-btn" style="display: none;">Carregar Dados Salvos</button>
+                <button onclick="clearSavedData()" id="clear-saved-btn" style="display: none;">Limpar Dados Salvos</button>
+            </div>
+        </div>
+        
         <div id="quizzes">
             <div class="quiz-container" id="quiz-1">
                 <div class="quiz-header">
-                    <h3>Quiz 1</h3>
+                    <h3>
+                        <span class="quiz-title-display">Quiz 1</span>
+                        <input type="text" class="quiz-title-input" style="display: none;" value="Quiz 1">
+                        <button class="edit-title-btn" onclick="event.preventDefault(); toggleEditTitle(1)" title="Editar título">✏️ Editar</button>
+                    </h3>
                     <button class="remove-quiz" onclick="removeQuiz(1)" disabled>Remover Quiz</button>
                 </div>
+                <button class="import-quiz-btn" onclick="triggerQuizImport(1)">📁 Importar Dados do Kahoot</button>
+                <input type="file" id="quiz-file-1" class="quiz-file-input" accept=".csv,.xlsx,.xls,.pdf">
                 <div id="players-quiz-1">
                     <div class="player-entry">
                         <input type="text" class="name-input" placeholder="Nome do Participante">
                         <input type="number" class="score-input" placeholder="Pontuação" min="0">
-                        <button class="remove-player" onclick="removePlayer(this)">✕</button>
+                        <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
                     </div>
                 </div>
                 <button class="add-player" onclick="addPlayer(1)">+ Adicionar Participante</button>
@@ -69,6 +92,6 @@
         </div>
     </div>
 
-   <script src="./script.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>

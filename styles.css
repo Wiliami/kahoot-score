@@ -66,11 +66,38 @@ h1 {
 .quiz-header h3 {
     margin: 0;
     font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 @media (min-width: 768px) {
     .quiz-header h3 {
         font-size: 1.25rem;
     }
+}
+.quiz-title-input {
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 10px;
+    flex: 1;
+    min-width: 150px;
+}
+@media (min-width: 768px) {
+    .quiz-title-input {
+        font-size: 1.25rem;
+    }
+}
+.edit-title-btn {
+    background-color: #25a879;
+    padding: 5px 10px;
+    font-size: 12px;
+    margin: 0;
+}
+.edit-title-btn:hover {
+    background-color: #1e8c64;
 }
 .player-entry {
     display: flex;
@@ -264,7 +291,7 @@ tr:hover {
 .file-upload input[type="file"] {
     width: 100%;
     padding: 10px;
-    border: 2px solid #46178f;
+    border: 2px dashed #46178f;
     border-radius: 5px;
     background-color: white;
     cursor: pointer;
@@ -279,4 +306,23 @@ tr:hover {
     .csv-instructions {
         font-size: 13px;
     }
+}
+.saved-data-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.saved-data-info p {
+    margin: 0;
+    font-size: 14px;
+}
+.import-quiz-btn {
+    background-color: #25a879;
+    margin: 5px 0;
+}
+.import-quiz-btn:hover {
+    background-color: #1e8c64;
+}
+.quiz-file-input {
+    display: none;
 }
