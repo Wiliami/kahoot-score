@@ -141,7 +141,7 @@ h1 {
 @media (min-width: 640px) {
     .remove-player {
         padding: 8px 12px;
-        font-size: 12px;
+        font-size: 14px;
         width: auto;
     }
 }
@@ -187,15 +187,50 @@ button.remove-quiz:hover {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    align-items: stretch;
 }
 @media (min-width: 640px) {
     .action-buttons {
         flex-direction: row;
         justify-content: center;
+        align-items: center;
     }
     .action-buttons button {
         width: auto;
     }
+}
+.ranking-config {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+}
+@media (min-width: 640px) {
+    .ranking-config {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+.ranking-select {
+    padding: 10px 15px;
+    border: 2px solid #46178f;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #46178f;
+    background-color: white;
+    cursor: pointer;
+    width: 100%;
+}
+@media (min-width: 640px) {
+    .ranking-select {
+        width: auto;
+        min-width: 200px;
+    }
+}
+.ranking-select:focus {
+    outline: none;
+    border-color: #33116a;
 }
 table {
     width: 100%;
@@ -259,6 +294,23 @@ tr:hover {
 }
 .file-input {
     margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+@media (min-width: 640px) {
+    .file-input {
+        flex-direction: row;
+        justify-content: center;
+    }
+    .file-input button {
+        width: auto;
+    }
+}
+#ranking-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
 }
 .reset-section {
     text-align: center;
@@ -316,6 +368,39 @@ tr:hover {
     margin: 0;
     font-size: 14px;
 }
+.category-selector {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+}
+.category-selector h3 {
+    margin-top: 0;
+    color: #46178f;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+@media (min-width: 768px) {
+    .category-selector h3 {
+        font-size: 1.25rem;
+    }
+}
+.category-select {
+    padding: 12px 15px;
+    border: 2px solid #46178f;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #46178f;
+    background-color: white;
+    cursor: pointer;
+    width: 100%;
+}
+.category-select:focus {
+    outline: none;
+    border-color: #33116a;
+    box-shadow: 0 0 0 3px rgba(70, 23, 143, 0.1);
+}
 .import-quiz-btn {
     background-color: #25a879;
     margin: 5px 0;
@@ -325,4 +410,22 @@ tr:hover {
 }
 .quiz-file-input {
     display: none;
+}
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.calculating {
+    opacity: 0.7;
+    cursor: not-allowed;
 }

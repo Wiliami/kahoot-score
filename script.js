@@ -1,4 +1,230 @@
+
 let quizCount = 1;
+let currentCategory = 'classe-teen';
+
+// Adicionar event listener para o upload de arquivo
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('csv-file').addEventListener('change', handleFileUpload);
+    document.getElementById('quiz-file-1').addEventListener('change', function(event) {
+        handleQuizFileUpload(event, 1);
+    });
+    
+    // Adicionar listener para mudança de categoria
+    document.getElementById('category-select').addEventListener('change', handleCategoryChange);
+    
+    // Carregar categoria salva
+    const savedCategory = localStorage.getItem('kahoot_current_category');
+    if (savedCategory) {
+        currentCategory = savedCategory;
+        document.getElementById('category-select').value = savedCategory;
+    }
+    
+    checkSavedData();
+    loadAllQuizzesFromStorage();
+});
+
+// Salvar todos os quizzes no localStorage
+function saveAllQuizzesToStorage() {
+    const quizzes = document.querySelectorAll('.quiz-container');
+    const allQuizzesData = {};
+    const quizTitles = {};
+    
+    quizzes.forEach(quiz => {
+        const quizId = quiz.id.replace('quiz-', '');
+        const playersDiv = quiz.querySelector(`#players-quiz-${quizId}`);
+        const playerEntries = playersDiv.querySelectorAll('.player-entry');
+        const data = [];
+        
+        // Salvar título do quiz
+        const titleDisplay = quiz.querySelector('.quiz-title-display');
+        if (titleDisplay) {
+            quizTitles[quizId] = titleDisplay.textContent;
+        }
+        
+        playerEntries.forEach(entry => {
+            const name = entry.querySelector('.name-input').value.trim();
+            const score = entry.querySelector('.score-input').value;
+            if (name || score) {
+                data.push({ name, score });
+            }
+        });
+        
+        if (data.length > 0) {
+            allQuizzesData[quizId] = data;
+        }
+    });
+    
+    // Salvar com chave específica da categoria
+    localStorage.setItem(`kahoot_all_quizzes_${currentCategory}`, JSON.stringify(allQuizzesData));
+    localStorage.setItem(`kahoot_quiz_titles_${currentCategory}`, JSON.stringify(quizTitles));
+    localStorage.setItem(`kahoot_quiz_count_${currentCategory}`, quizCount);
+    localStorage.setItem('kahoot_current_category', currentCategory);
+}
+
+// Carregar todos os quizzes do localStorage
+function loadAllQuizzesFromStorage() {
+    const savedData = localStorage.getItem(`kahoot_all_quizzes_${currentCategory}`);
+    const savedQuizCount = localStorage.getItem(`kahoot_quiz_count_${currentCategory}`);
+    const savedTitles = localStorage.getItem(`kahoot_quiz_titles_${currentCategory}`);
+    
+    if (savedData) {
+        const allQuizzesData = JSON.parse(savedData);
+        const quizTitles = savedTitles ? JSON.parse(savedTitles) : {};
+        const quizIds = Object.keys(allQuizzesData).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        // Restaurar contador de quizzes
+        if (savedQuizCount) {
+            quizCount = parseInt(savedQuizCount);
+        }
+        
+        // Criar quizzes necessários
+        for (let i = 2; i <= quizIds.length; i++) {
+            if (!document.getElementById(`quiz-${i}`)) {
+                addQuizSilent(i);
+            }
+        }
+        
+        // Carregar dados e títulos em cada quiz
+        quizIds.forEach(quizId => {
+            if (allQuizzesData[quizId]) {
+                loadPlayersToQuiz(parseInt(quizId), allQuizzesData[quizId]);
+            }
+            if (quizTitles[quizId]) {
+                updateQuizTitle(parseInt(quizId), quizTitles[quizId]);
+            }
+        });
+        
+        checkSavedData();
+    }
+}
+
+// Trocar categoria
+function handleCategoryChange() {
+    const newCategory = document.getElementById('category-select').value;
+    
+    if (newCategory !== currentCategory) {
+        const confirmChange = confirm('Trocar de categoria irá salvar os dados atuais e carregar os dados da nova categoria. Deseja continuar?');
+        
+        if (confirmChange) {
+            // Salvar dados da categoria atual antes de trocar
+            saveAllQuizzesToStorage();
+            
+            // Atualizar categoria
+            currentCategory = newCategory;
+            localStorage.setItem('kahoot_current_category', currentCategory);
+            
+            // Limpar todos os quizzes da tela
+            clearAllQuizzes();
+            
+            // Resetar contador
+            quizCount = 1;
+            
+            // Recriar Quiz 1
+            recreateQuiz1();
+            
+            // Carregar dados da nova categoria
+            loadAllQuizzesFromStorage();
+            
+            // Atualizar status de dados salvos
+            checkSavedData();
+            
+            // Ocultar ranking se estiver visível
+            document.getElementById('ranking-results').classList.add('hidden');
+        } else {
+            // Reverter select se o usuário cancelar
+            document.getElementById('category-select').value = currentCategory;
+        }
+    }
+}
+
+// Limpar todos os quizzes da tela
+function clearAllQuizzes() {
+    const quizzesDiv = document.getElementById('quizzes');
+    quizzesDiv.innerHTML = '';
+}
+
+// Recriar Quiz 1 vazio
+function recreateQuiz1() {
+    const quizzesDiv = document.getElementById('quizzes');
+    
+    const quiz1Div = document.createElement('div');
+    quiz1Div.className = 'quiz-container';
+    quiz1Div.id = 'quiz-1';
+    
+    quiz1Div.innerHTML = `
+        <div class="quiz-header">
+            <h3>
+                <span class="quiz-title-display">Quiz 1</span>
+                <input type="text" class="quiz-title-input" style="display: none;" value="Quiz 1">
+                <button class="edit-title-btn" onclick="toggleEditTitle(1)">✏️ Editar</button>
+            </h3>
+            <button class="remove-quiz" onclick="removeQuiz(1)" disabled>Remover Quiz</button>
+        </div>
+        <button class="import-quiz-btn" onclick="triggerQuizImport(1)">📁 Importar Dados do Kahoot</button>
+        <input type="file" id="quiz-file-1" class="quiz-file-input" accept=".csv,.xlsx,.xls,.pdf">
+        <div id="players-quiz-1">
+            <div class="player-entry">
+                <input type="text" class="name-input" placeholder="Nome do Participante">
+                <input type="number" class="score-input" placeholder="Pontuação" min="0">
+                <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
+            </div>
+        </div>
+        <button class="add-player" onclick="addPlayer(1)">+ Adicionar Participante</button>
+    `;
+    
+    quizzesDiv.appendChild(quiz1Div);
+    
+    // Setup listener de importação
+    document.getElementById('quiz-file-1').addEventListener('change', function(event) {
+        handleQuizFileUpload(event, 1);
+    });
+    
+    // Adicionar auto-save listeners
+    addQuizAutoSaveListeners(1);
+}
+
+// Adicionar quiz silenciosamente (sem incrementar contador)
+function addQuizSilent(quizId) {
+    const quizzesDiv = document.getElementById('quizzes');
+    
+    const newQuizDiv = document.createElement('div');
+    newQuizDiv.className = 'quiz-container';
+    newQuizDiv.id = `quiz-${quizId}`;
+    
+    newQuizDiv.innerHTML = `
+        <div class="quiz-header">
+            <h3>
+                <span class="quiz-title-display">Quiz ${quizId}</span>
+                <input type="text" class="quiz-title-input" style="display: none;" value="Quiz ${quizId}">
+                <button class="edit-title-btn" onclick="toggleEditTitle(${quizId})">✏️ Editar</button>
+            </h3>
+            <button class="remove-quiz" onclick="removeQuiz(${quizId})">Remover Quiz</button>
+        </div>
+        <button class="import-quiz-btn" onclick="triggerQuizImport(${quizId})">📁 Importar Dados do Kahoot</button>
+        <input type="file" id="quiz-file-${quizId}" class="quiz-file-input" accept=".csv,.xlsx,.xls,.pdf">
+        <div id="players-quiz-${quizId}">
+            <div class="player-entry">
+                <input type="text" class="name-input" placeholder="Nome do Participante">
+                <input type="number" class="score-input" placeholder="Pontuação" min="0">
+                <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
+            </div>
+        </div>
+        <button class="add-player" onclick="addPlayer(${quizId})">+ Adicionar Participante</button>
+    `;
+    
+    quizzesDiv.appendChild(newQuizDiv);
+    
+    // Setup listener de importação para o novo quiz
+    setupQuizImportListener(quizId);
+    
+    // Habilitar o botão de remover no primeiro quiz quando houver mais de um quiz
+    if (quizId === 2) {
+        document.querySelector(`#quiz-1 .remove-quiz`).removeAttribute('disabled');
+    }
+    
+    // Adicionar auto-save listeners
+    addQuizAutoSaveListeners(quizId);
+}
 
 // Toggle edição de título do quiz
 function toggleEditTitle(quizId) {
@@ -39,171 +265,15 @@ function updateQuizTitle(quizId, title) {
     }
 }
 
-// Adicionar event listener para o upload de arquivo
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('csv-file').addEventListener('change', handleFileUpload);
-    document.getElementById('quiz-file-1').addEventListener('change', function(event) {
-        handleQuizFileUpload(event, 1);
-    });
-    checkSavedData();
-    loadAllQuizzesFromStorage();
-    setupTitleEditListeners();
-});
-
-// Configurar listeners para edição de título
-function setupTitleEditListeners() {
-    const quizzes = document.querySelectorAll('.quiz-container');
-    quizzes.forEach(quiz => {
-        const quizId = quiz.id.replace('quiz-', '');
-        const editBtn = quiz.querySelector('.edit-title-btn');
-        const titleInput = quiz.querySelector('.quiz-title-input');
-        
-        if (editBtn) {
-            editBtn.onclick = function(e) {
-                e.preventDefault();
-                toggleEditTitle(parseInt(quizId));
-            };
-        }
-        
-        if (titleInput) {
-            titleInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    toggleEditTitle(parseInt(quizId));
-                }
-            });
-        }
-    });
-}
-
-// Salvar todos os quizzes no localStorage
-function saveAllQuizzesToStorage() {
-    const quizzes = document.querySelectorAll('.quiz-container');
-    const allQuizzesData = {};
-    const quizTitles = {};
-    
-    quizzes.forEach(quiz => {
-        const quizId = quiz.id.replace('quiz-', '');
-        const playersDiv = quiz.querySelector(`#players-quiz-${quizId}`);
-        const playerEntries = playersDiv.querySelectorAll('.player-entry');
-        const data = [];
-        
-        // Salvar título do quiz
-        const titleDisplay = quiz.querySelector('.quiz-title-display');
-        if (titleDisplay) {
-            quizTitles[quizId] = titleDisplay.textContent;
-        }
-        
-        playerEntries.forEach(entry => {
-            const name = entry.querySelector('.name-input').value.trim();
-            const score = entry.querySelector('.score-input').value;
-            if (name || score) {
-                data.push({ name, score });
-            }
-        });
-        
-        if (data.length > 0) {
-            allQuizzesData[quizId] = data;
-        }
-    });
-    
-    localStorage.setItem('kahoot_all_quizzes', JSON.stringify(allQuizzesData));
-    localStorage.setItem('kahoot_quiz_titles', JSON.stringify(quizTitles));
-    localStorage.setItem('kahoot_quiz_count', quizCount);
-}
-
-// Carregar todos os quizzes do localStorage
-function loadAllQuizzesFromStorage() {
-    const savedData = localStorage.getItem('kahoot_all_quizzes');
-    const savedQuizCount = localStorage.getItem('kahoot_quiz_count');
-    const savedTitles = localStorage.getItem('kahoot_quiz_titles');
-    
-    if (savedData) {
-        const allQuizzesData = JSON.parse(savedData);
-        const quizTitles = savedTitles ? JSON.parse(savedTitles) : {};
-        const quizIds = Object.keys(allQuizzesData).sort((a, b) => parseInt(a) - parseInt(b));
-        
-        // Restaurar contador de quizzes
-        if (savedQuizCount) {
-            quizCount = parseInt(savedQuizCount);
-        }
-        
-        // Criar quizzes necessários
-        for (let i = 2; i <= quizIds.length; i++) {
-            if (!document.getElementById(`quiz-${i}`)) {
-                addQuizSilent(i);
-            }
-        }
-        
-        // Carregar dados e títulos em cada quiz
-        quizIds.forEach(quizId => {
-            if (allQuizzesData[quizId]) {
-                loadPlayersToQuiz(parseInt(quizId), allQuizzesData[quizId]);
-            }
-            if (quizTitles[quizId]) {
-                updateQuizTitle(parseInt(quizId), quizTitles[quizId]);
-            }
-        });
-        
-        // Reconfigurar listeners após carregar
-        setTimeout(() => {
-            setupTitleEditListeners();
-        }, 100);
-        
-        checkSavedData();
-    }
-}
-
-// Adicionar quiz silenciosamente (sem incrementar contador)
-function addQuizSilent(quizId) {
-    const quizzesDiv = document.getElementById('quizzes');
-    
-    const newQuizDiv = document.createElement('div');
-    newQuizDiv.className = 'quiz-container';
-    newQuizDiv.id = `quiz-${quizId}`;
-    
-    newQuizDiv.innerHTML = `
-        <div class="quiz-header">
-            <h3>
-                <span class="quiz-title-display">Quiz ${quizId}</span>
-                <input type="text" class="quiz-title-input" style="display: none;" value="Quiz ${quizId}">
-                <button class="edit-title-btn" onclick="toggleEditTitle(${quizId})" title="Editar título">✏️ Editar</button>
-            </h3>
-            <button class="remove-quiz" onclick="removeQuiz(${quizId})">Remover Quiz</button>
-        </div>
-        <button class="import-quiz-btn" onclick="triggerQuizImport(${quizId})">📁 Importar Dados do Kahoot</button>
-        <input type="file" id="quiz-file-${quizId}" class="quiz-file-input" accept=".csv,.xlsx,.xls,.pdf">
-        <div id="players-quiz-${quizId}">
-            <div class="player-entry">
-                <input type="text" class="name-input" placeholder="Nome do Participante">
-                <input type="number" class="score-input" placeholder="Pontuação" min="0">
-                <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
-            </div>
-        </div>
-        <button class="add-player" onclick="addPlayer(${quizId})">+ Adicionar Participante</button>
-    `;
-    
-    quizzesDiv.appendChild(newQuizDiv);
-    
-    // Setup listener de importação para o novo quiz
-    setupQuizImportListener(quizId);
-    
-    // Habilitar o botão de remover no primeiro quiz quando houver mais de um quiz
-    if (quizId === 2) {
-        document.querySelector(`#quiz-1 .remove-quiz`).removeAttribute('disabled');
-    }
-    
-    // Adicionar auto-save listeners
-    addQuizAutoSaveListeners(quizId);
-}
-
 // Verificar se há dados salvos
 function checkSavedData() {
-    const savedData = localStorage.getItem('kahoot_all_quizzes');
+    const category = currentCategory;
+    const savedData = localStorage.getItem(`kahoot_all_quizzes_${category}`);
     if (savedData) {
         const allQuizzesData = JSON.parse(savedData);
         const quizCount = Object.keys(allQuizzesData).length;
-        document.getElementById('saved-data-message').textContent = `${quizCount} quiz(zes) salvos no navegador!`;
+        const categoryName = category === 'classe-teen' ? 'Classe Teen' : 'Culto Jovem';
+        document.getElementById('saved-data-message').textContent = `${quizCount} quiz(zes) salvos (${categoryName})!`;
         document.getElementById('load-saved-btn').style.display = 'inline-block';
         document.getElementById('clear-saved-btn').style.display = 'inline-block';
     } else {
@@ -266,7 +336,7 @@ function loadPlayersToQuiz(quizId, data) {
         playerDiv.innerHTML = `
             <input type="text" class="name-input" placeholder="Nome do Participante" value="${player.name}">
             <input type="number" class="score-input" placeholder="Pontuação" min="0" value="${player.score || ''}">
-            <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
+            <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
         `;
         playersDiv.appendChild(playerDiv);
     });
@@ -433,7 +503,7 @@ function parsePDFText(text, quizId) {
             const score = match[2];
             
             if (!foundData) {
-                headers = ['Player', 'Total Score (points)'];
+                headers = ['Nome', 'Pontuação'];
                 data.push(headers);
                 foundData = true;
             }
@@ -449,7 +519,7 @@ function parsePDFText(text, quizId) {
                     const score = lastPart;
                     
                     if (!foundData) {
-                        headers = ['Player', 'Total Score (points)'];
+                        headers = ['Nome', 'Pontuação'];
                         data.push(headers);
                         foundData = true;
                     }
@@ -485,7 +555,7 @@ function processKahootData(data, quizId) {
     // Procurar coluna de nome
     for (let i = 0; i < headers.length; i++) {
         const header = headers[i];
-        if (header.includes('player') || header.includes('nome') || header.includes('player') || header.includes('participante') || header.includes('nickname')) {
+        if (header.includes('name') || header.includes('nome') || header.includes('player') || header.includes('participante') || header.includes('nickname')) {
             nameIndex = i;
             break;
         }
@@ -494,14 +564,14 @@ function processKahootData(data, quizId) {
     // Procurar coluna de pontuação
     for (let i = 0; i < headers.length; i++) {
         const header = headers[i];
-        if (header.includes('score') || header.includes('pontu') || header.includes('total') || header.includes('points')) {
+        if (header.includes('score') || header.includes('pontu') || header.includes('total') || header.includes('points') || header.includes('point')) {
             scoreIndex = i;
             break;
         }
     }
     
     if (nameIndex === -1 || scoreIndex === -1) {
-        alert('Não foi possível encontrar as colunas de nome e pontuação. Certifique-se de que o arquivo contém colunas com "Player" e "Total Score (points)" (ou "Name" e "Score").');
+        alert('Não foi possível encontrar as colunas de nome e pontuação. Certifique-se de que o arquivo contém colunas com "Player" e "Total Score" (ou variações como "Nome" e "Pontuação").');
         return;
     }
     
@@ -521,7 +591,7 @@ function processKahootData(data, quizId) {
             playerDiv.innerHTML = `
                 <input type="text" class="name-input" placeholder="Nome do Participante" value="${name}">
                 <input type="number" class="score-input" placeholder="Pontuação" min="0" value="${score}">
-                <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
+                <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
             `;
             playersDiv.appendChild(playerDiv);
         }
@@ -554,7 +624,7 @@ function addQuiz() {
             <h3>
                 <span class="quiz-title-display">Quiz ${quizCount}</span>
                 <input type="text" class="quiz-title-input" style="display: none;" value="Quiz ${quizCount}">
-                <button class="edit-title-btn" title="Editar título">✏️ Editar</button>
+                <button class="edit-title-btn" onclick="toggleEditTitle(${quizCount})">✏️ Editar</button>
             </h3>
             <button class="remove-quiz" onclick="removeQuiz(${quizCount})">Remover Quiz</button>
         </div>
@@ -564,7 +634,7 @@ function addQuiz() {
             <div class="player-entry">
                 <input type="text" class="name-input" placeholder="Nome do Participante">
                 <input type="number" class="score-input" placeholder="Pontuação" min="0">
-                <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
+                <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
             </div>
         </div>
         <button class="add-player" onclick="addPlayer(${quizCount})">+ Adicionar Participante</button>
@@ -577,22 +647,6 @@ function addQuiz() {
     
     // Adicionar auto-save listeners
     addQuizAutoSaveListeners(quizCount);
-    
-    // Setup listener de edição de título
-    const editBtn = newQuizDiv.querySelector('.edit-title-btn');
-    const titleInput = newQuizDiv.querySelector('.quiz-title-input');
-    
-    editBtn.onclick = function(e) {
-        e.preventDefault();
-        toggleEditTitle(quizCount);
-    };
-    
-    titleInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            toggleEditTitle(quizCount);
-        }
-    });
     
     // Habilitar o botão de remover no primeiro quiz quando houver mais de um quiz
     if (quizCount === 2) {
@@ -624,7 +678,7 @@ function addPlayer(quizId) {
     newPlayerDiv.innerHTML = `
         <input type="text" class="name-input" placeholder="Nome do Participante">
         <input type="number" class="score-input" placeholder="Pontuação" min="0">
-        <button class="remove-player" onclick="removePlayer(this)">✕</button>
+        <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
     `;
     
     playersDiv.appendChild(newPlayerDiv);
@@ -650,61 +704,98 @@ function removePlayer(button) {
 }
 
 function calculateRanking() {
-    const playerScores = {};
+    const calculateBtn = document.getElementById('calculate-btn');
+    const startTime = Date.now();
     
-    // Coletar todas as pontuações de todos os quizzes
-    const quizzes = document.querySelectorAll('.quiz-container');
+    // Desabilitar botão e adicionar spinner
+    calculateBtn.disabled = true;
+    calculateBtn.classList.add('calculating');
+    calculateBtn.innerHTML = 'Calculando... <span class="spinner"></span>';
     
-    quizzes.forEach(quiz => {
-        const playerEntries = quiz.querySelectorAll('.player-entry');
-        
-        playerEntries.forEach(entry => {
-            const nameInput = entry.querySelector('.name-input');
-            const scoreInput = entry.querySelector('.score-input');
+    // Usar setTimeout para permitir que o spinner apareça antes do processamento
+    setTimeout(function() {
+        try {
+            const playerScores = {};
             
-            const name = nameInput.value.trim();
-            const score = parseInt(scoreInput.value) || 0;
+            // Coletar todas as pontuações de todos os quizzes
+            const quizzes = document.querySelectorAll('.quiz-container');
             
-            if (name) {
-                if (!playerScores[name]) {
-                    playerScores[name] = 0;
-                }
-                playerScores[name] += score;
-            }
-        });
-    });
-    
-    // Converter para array e ordenar
-    const playersArray = Object.keys(playerScores).map(name => {
-        return { name, totalScore: playerScores[name] };
-    });
-    
-    playersArray.sort((a, b) => b.totalScore - a.totalScore);
-    
-    // Mostrar o ranking
-    const rankingBody = document.getElementById('ranking-body');
-    rankingBody.innerHTML = '';
-    
-    playersArray.forEach((player, index) => {
-        const row = document.createElement('tr');
-        
-        // Adicionar classe para medalha nas três primeiras posições
-        let positionClass = '';
-        if (index === 0) positionClass = 'medal-1';
-        else if (index === 1) positionClass = 'medal-2';
-        else if (index === 2) positionClass = 'medal-3';
-        
-        row.innerHTML = `
-            <td class="position ${positionClass}">${index + 1}</td>
-            <td>${player.name}</td>
-            <td>${player.totalScore}</td>
-        `;
-        
-        rankingBody.appendChild(row);
-    });
-    
-    // Mostrar a seção de resultados
-    document.getElementById('ranking-results').classList.remove('hidden');
+            quizzes.forEach(quiz => {
+                const playerEntries = quiz.querySelectorAll('.player-entry');
+                
+                playerEntries.forEach(entry => {
+                    const nameInput = entry.querySelector('.name-input');
+                    const scoreInput = entry.querySelector('.score-input');
+                    
+                    const name = nameInput.value.trim();
+                    const score = parseInt(scoreInput.value) || 0;
+                    
+                    if (name) {
+                        if (!playerScores[name]) {
+                            playerScores[name] = 0;
+                        }
+                        playerScores[name] += score;
+                    }
+                });
+            });
+            
+            // Converter para array e ordenar
+            const playersArray = Object.keys(playerScores).map(name => {
+                return { name, totalScore: playerScores[name] };
+            });
+            
+            playersArray.sort((a, b) => b.totalScore - a.totalScore);
+            
+            // Mostrar o ranking
+            const rankingBody = document.getElementById('ranking-body');
+            rankingBody.innerHTML = '';
+            
+            playersArray.forEach((player, index) => {
+                const row = document.createElement('tr');
+                
+                // Adicionar classe para medalha nas três primeiras posições
+                let positionClass = '';
+                if (index === 0) positionClass = 'medal-1';
+                else if (index === 1) positionClass = 'medal-2';
+                else if (index === 2) positionClass = 'medal-3';
+                
+                row.innerHTML = `
+                    <td class="position ${positionClass}">${index + 1}</td>
+                    <td>${player.name}</td>
+                    <td>${player.totalScore}</td>
+                `;
+                
+                rankingBody.appendChild(row);
+            });
+            
+            // Mostrar a seção de resultados
+            document.getElementById('ranking-results').classList.remove('hidden');
+            
+            // Calcular tempo decorrido
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, 1000 - elapsedTime);
+            
+            // Garantir que o spinner fique visível por pelo menos 1 segundo
+            setTimeout(function() {
+                // Reabilitar botão e remover spinner
+                calculateBtn.disabled = false;
+                calculateBtn.classList.remove('calculating');
+                calculateBtn.innerHTML = 'Calcular Ranking';
+                
+                // Scroll suave até os resultados
+                document.getElementById('ranking-results').scrollIntoView({ behavior: 'smooth' });
+            }, remainingTime);
+            
+        } catch (error) {
+            console.error('Erro ao calcular ranking:', error);
+            alert('Erro ao calcular o ranking. Por favor, verifique os dados e tente novamente.');
+            
+            // Reabilitar botão imediatamente em caso de erro
+            calculateBtn.disabled = false;
+            calculateBtn.classList.remove('calculating');
+            calculateBtn.innerHTML = 'Calcular Ranking';
+        }
+    }, 100);
 }
 
 function exportToCSV() {
@@ -745,6 +836,68 @@ function exportToCSV() {
     document.body.removeChild(link);
 }
 
+function exportToImage() {
+    const rankingContainer = document.getElementById('ranking-container');
+    const rankingType = document.getElementById('ranking-type').value;
+    
+    // Descobrir o número e título do último quiz
+    const quizzes = document.querySelectorAll('.quiz-container');
+    const lastQuiz = quizzes[quizzes.length - 1];
+    const lastQuizTitle = lastQuiz ? lastQuiz.querySelector('.quiz-title-display').textContent : 'Quiz 1';
+    
+    // Definir título baseado no tipo de ranking selecionado
+    let imageTitle;
+    let fileNameSuffix;
+    
+    if (rankingType === 'culto-jovem') {
+        imageTitle = 'Ranking Final - Kahoot Culto Jovem';
+        fileNameSuffix = 'culto_jovem';
+    } else {
+        // Classe Teen (padrão)
+        imageTitle = `Ranking Final - Kahoot (${lastQuizTitle})`;
+        const safeFileName = lastQuizTitle.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        fileNameSuffix = safeFileName;
+    }
+    
+    // Adicionar título temporário para a imagem
+    const tempTitle = document.createElement('h2');
+    tempTitle.textContent = imageTitle;
+    tempTitle.style.color = '#46178f';
+    tempTitle.style.textAlign = 'center';
+    tempTitle.style.marginBottom = '20px';
+    rankingContainer.insertBefore(tempTitle, rankingContainer.firstChild);
+    
+    // Capturar o container como imagem
+    html2canvas(rankingContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+    }).then(function(canvas) {
+        // Converter para blob e baixar
+        canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            link.download = `ranking_kahoot_${fileNameSuffix}_${date}.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Remover título temporário
+        rankingContainer.removeChild(tempTitle);
+    }).catch(function(error) {
+        console.error('Erro ao gerar imagem:', error);
+        alert('Erro ao gerar imagem. Por favor, tente novamente.');
+        // Remover título temporário em caso de erro
+        if (rankingContainer.contains(tempTitle)) {
+            rankingContainer.removeChild(tempTitle);
+        }
+    });
+}
+
 function resetAll() {
     // Remover todos os quizzes exceto o primeiro
     const quizzes = document.querySelectorAll('.quiz-container');
@@ -761,7 +914,7 @@ function resetAll() {
         <div class="player-entry">
             <input type="text" class="name-input" placeholder="Nome do Participante">
             <input type="number" class="score-input" placeholder="Pontuação" min="0">
-            <button class="remove-player" onclick="removePlayer(this)">✕</button>
+            <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
         </div>
     `;
     

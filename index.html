@@ -6,14 +6,13 @@
     <title>Calculador de Ranking Kahoot</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <link rel="stylesheet" href="./styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         // Configurar PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
-    <style>
-        
-    </style>
+    <link rel="stylesheet" href="./styles.css">
+    
 </head>
 <body>
     <h1>Calculador de Ranking Kahoot</h1>
@@ -39,13 +38,21 @@
             </div>
         </div>
         
+        <div class="category-selector">
+            <h3>Selecione a Categoria</h3>
+            <select id="category-select" class="category-select">
+                <option value="classe-teen">Classe Teen</option>
+                <option value="culto-jovem">Culto Jovem</option>
+            </select>
+        </div>
+        
         <div id="quizzes">
             <div class="quiz-container" id="quiz-1">
                 <div class="quiz-header">
                     <h3>
                         <span class="quiz-title-display">Quiz 1</span>
                         <input type="text" class="quiz-title-input" style="display: none;" value="Quiz 1">
-                        <button class="edit-title-btn" onclick="event.preventDefault(); toggleEditTitle(1)" title="Editar título">✏️ Editar</button>
+                        <button class="edit-title-btn" onclick="toggleEditTitle(1)">✏️ Editar</button>
                     </h3>
                     <button class="remove-quiz" onclick="removeQuiz(1)" disabled>Remover Quiz</button>
                 </div>
@@ -55,7 +62,7 @@
                     <div class="player-entry">
                         <input type="text" class="name-input" placeholder="Nome do Participante">
                         <input type="number" class="score-input" placeholder="Pontuação" min="0">
-                        <button class="remove-player" onclick="removePlayer(this)" title="Excluir participante">✕</button>
+                        <button class="remove-player" onclick="removePlayer(this)">🗑️</button>
                     </div>
                 </div>
                 <button class="add-player" onclick="addPlayer(1)">+ Adicionar Participante</button>
@@ -64,26 +71,35 @@
         
         <div class="action-buttons">
             <button onclick="addQuiz()">+ Adicionar Novo Quiz</button>
-            <button onclick="calculateRanking()">Calcular Ranking</button>
+            <div class="ranking-config">
+                <select id="ranking-type" class="ranking-select">
+                    <option value="classe-teen">Classe Teen</option>
+                    <option value="culto-jovem">Culto Jovem</option>
+                </select>
+                <button id="calculate-btn" onclick="calculateRanking()">Calcular Ranking</button>
+            </div>
         </div>
         
         <div id="ranking-results" class="hidden">
             <h2>Ranking Final</h2>
-            <table id="ranking-table">
-                <thead>
-                    <tr>
-                        <th class="position">Posição</th>
-                        <th>Participante</th>
-                        <th>Pontuação Total</th>
-                    </tr>
-                </thead>
-                <tbody id="ranking-body">
-                    <!-- Ranking será inserido aqui -->
-                </tbody>
-            </table>
+            <div id="ranking-container">
+                <table id="ranking-table">
+                    <thead>
+                        <tr>
+                            <th class="position">Posição</th>
+                            <th>Participante</th>
+                            <th>Pontuação Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-body">
+                        <!-- Ranking será inserido aqui -->
+                    </tbody>
+                </table>
+            </div>
             
             <div class="file-input">
-                <button onclick="exportToCSV()">Exportar para CSV</button>
+                <button onclick="exportToCSV()">📄 Exportar para CSV</button>
+                <button onclick="exportToImage()">🖼️ Exportar como Imagem</button>
             </div>
         </div>
         
