@@ -11,6 +11,7 @@
         // Configurar PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
+<<<<<<< HEAD
     <style>
         * {
             box-sizing: border-box;
@@ -444,6 +445,10 @@
             cursor: not-allowed;
         }
     </style>
+=======
+    <link rel="stylesheet" href="./styles.css">
+    
+>>>>>>> refs/remotes/origin/main
 </head>
 <body>
     <h1>Calculador de Ranking Kahoot</h1>
@@ -471,7 +476,11 @@
         
         <div class="category-selector">
             <h3>Selecione a Categoria</h3>
+<<<<<<< HEAD
             <select id="category-select" class="category-select" onchange="handleCategoryChange()">
+=======
+            <select id="category-select" class="category-select">
+>>>>>>> refs/remotes/origin/main
                 <option value="classe-teen">Classe Teen</option>
                 <option value="culto-jovem">Culto Jovem</option>
             </select>
@@ -539,6 +548,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <script>
         let quizCount = 1;
         let currentCategory = 'classe-teen';
@@ -1391,5 +1401,8 @@
             document.getElementById('ranking-results').classList.add('hidden');
         }
     </script>
+=======
+    <script src="./script.js"></script>
+>>>>>>> refs/remotes/origin/main
 </body>
 </html>
